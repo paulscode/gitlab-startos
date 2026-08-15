@@ -112,7 +112,14 @@ export const main = sdk.setupMain(async ({ effects }) => {
   // container that dies with the reason buried in its logs.
   const gate = await checkUpgradeGate()
   if (gate.kind === 'too-old') {
-    throw new Error(upgradeBlockedMessage(gate))
+    const message = upgradeBlockedMessage(gate)
+    // Log before throwing. A thrown error out of `main` stops the service from
+    // starting but is not surfaced anywhere the user looks — it does not reach
+    // the log stream and leaves statusInfo.error null, so all they would see is
+    // a service stuck "starting" with no explanation. The service log is where
+    // the troubleshooting docs point, so put it there explicitly.
+    console.error(message)
+    throw new Error(message)
   }
 
   // Both values come off the one host record, and only these two are returned,
