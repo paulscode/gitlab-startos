@@ -8,7 +8,7 @@ import {
 import { storeJson } from './fileModels/store.json'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
-import { checkUpgradeGate } from './upgradeGate'
+import { checkUpgradeGate, upgradeBlockedMessage } from './upgradeGate'
 import { httpInterfaceId, mainHostId, mount, sshInterfaceId } from './utils'
 
 /**
@@ -112,11 +112,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
   // container that dies with the reason buried in its logs.
   const gate = await checkUpgradeGate()
   if (gate.kind === 'too-old') {
-    throw new Error(
-      i18n(
-        'This version of GitLab cannot upgrade directly from the version installed. Install an intermediate release first.',
-      ) + ` (installed ${gate.installed}, requires ${gate.floor} or newer)`,
-    )
+    throw new Error(upgradeBlockedMessage(gate))
   }
 
   // Both values come off the one host record, and only these two are returned,

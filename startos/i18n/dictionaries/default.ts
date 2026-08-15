@@ -43,9 +43,8 @@ const dict = {
   'The GitLab web interface. Also serves the API and git clone/push over HTTPS.': 39,
   'The address GitLab treats as canonical is no longer available. Choose another.': 40,
   'This replaces the current root password immediately. Anyone relying on the old one will be locked out.': 41,
-  'This version of GitLab cannot upgrade directly from the version installed. Install an intermediate release first.': 42,
-  'Web Interface': 43,
-  'Web UI and Git over HTTPS': 44,
+  'Web Interface': 42,
+  'Web UI and Git over HTTPS': 43,
 } as const
 
 /**

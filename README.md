@@ -163,7 +163,9 @@ A restored instance needs nothing re-entered. Because `/etc/gitlab` is included,
 ## Troubleshooting
 
 **Service refuses to start right after an update, reporting that it cannot upgrade directly from the installed version.**
-GitLab enforces a minimum version you must be upgrading *from*, and this update crosses it. The message names both the installed version and the required floor. Install an intermediate release first — the release notes for the version that raised the floor say which — then update again. Data is untouched: the check runs before anything is migrated.
+GitLab enforces a minimum version you must be upgrading *from*, and this update crosses it. The message names the installed version, the required floor, and the specific release to install next, with a link to where releases are published. Install that one, start it and let it finish, then update again — a long-dormant instance can need several rounds, because the floor itself rises over time. Data is untouched throughout: the check runs before anything is migrated.
+
+If the message says no published release can bridge the gap, the instance is too old for any available upgrade path; consult GitLab's own upgrade documentation.
 
 **Service stays "starting" past the grace period, having previously worked.**
 Check the service logs for a Chef stack trace ending in `Removed configurations found` or `UnknownConfigOptionError`. This means an Omnibus configuration key the package sets was removed upstream in the version just installed. There is no user-side fix; it requires a package update.

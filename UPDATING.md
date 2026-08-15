@@ -95,4 +95,30 @@ Then:
    plainly at the top of the release notes — name the version they must install
    first — and keep that intermediate version published so they can.
 
-3. If the floor did not move, no special handling is needed.
+3. **Append an entry to `RELEASE_HISTORY` in `startos/upgradeRules.ts`** —
+   the version you are shipping and the floor it enforces. This is what lets a
+   stranded instance be told which release to install *next*, instead of merely
+   that it is stranded.
+
+4. **If the new floor is above the previous release's version, stop.** Everyone
+   sitting on that previous release would be unable to reach the new one at all,
+   and no retry or message can rescue them — the only route out is an
+   intermediate release, which must be published *first*. `npm run check` fails
+   the build on this, naming the version you need.
+
+   In practice: when GitLab raises its floor past your last release, publish a
+   release at or above the new floor before publishing the one that requires it.
+
+5. If the floor did not move, appending the history entry is all that is needed.
+
+### Why users may need several hops
+
+StartOS offers every user a single hop from whatever they have installed to the
+newest version, however many releases they skipped. GitLab will refuse that jump
+whenever it crosses a floor. The package detects this before starting anything
+and names the furthest release the user can legally install right now, so
+recovery is: install that, start it, update again — repeating until it takes.
+
+Because the floor itself rises over time, a long-dormant instance can need more
+than one round. `npm run check` prints the worst-case hop count implied by the
+current history on every build.

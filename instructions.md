@@ -59,3 +59,4 @@ If instead you want to attach a runner on some other machine, run the **Create R
 - **GitLab Pages is turned off.** Publishing static sites from your repositories is not available.
 - **Settings changes need a restart.** The actions here save your choice immediately, but GitLab applies its configuration while starting up, so the change takes effect on the next start — and that start takes a couple of minutes.
 - **Give it room.** GitLab uses around 3 GB of memory at idle. If your server is running many other services, expect it to feel slow.
+- **Don't leave updates for years.** GitLab limits how far it will jump in a single upgrade. If you fall a long way behind, an update may refuse to start and tell you which older release to install first — follow it, then update again, repeating until it succeeds. Nothing is lost when this happens, but it is easier to just update reasonably often.
