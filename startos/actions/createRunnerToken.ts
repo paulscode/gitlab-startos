@@ -1,6 +1,6 @@
 import { i18n } from '../i18n'
 import { sdk } from '../sdk'
-import { mount } from '../utils'
+import { gitlabApi } from '../gitlabApi'
 
 const { InputSpec, Value } = sdk
 
@@ -65,40 +65,26 @@ export const createRunnerToken = sdk.Action.withInput(
       .map((t) => t.trim())
       .filter(Boolean)
 
-    const params = {
-      runner_type: 'instance_type',
-      description: input.description,
-      tag_list: tagList,
-      run_untagged: input.runUntagged,
-    }
-
-    const script = [
-      `user = User.find_by!(username: 'root')`,
-      `res = ::Ci::Runners::CreateRunnerService.new(user: user, params: ${rubyLiteral(params)}).execute`,
-      // Print a sentinel rather than the bare token so the surrounding Rails
-      // boot chatter cannot be mistaken for the value.
-      `if res.success? then puts "STARTOS_TOKEN=#{res.payload[:runner].token}" else puts "STARTOS_ERROR=#{res.message}" end`,
-    ].join('; ')
-
-    const result = await sdk.SubContainer.withTemp(
+    const res = await gitlabApi<{ id: number; token: string }>(
       effects,
-      { imageId: 'gitlab' },
-      mount,
-      'gitlab-create-runner',
-      async (sub) => sub.exec(['gitlab-rails', 'runner', script]),
+      'POST',
+      '/user/runners',
+      {
+        runner_type: 'instance_type',
+        description: input.description,
+        // GitLab's form encoding takes repeated/array params as a CSV string.
+        tag_list: tagList.join(','),
+        run_untagged: input.runUntagged,
+      },
     )
 
-    const stdout = String(result.stdout)
-    const token = stdout.match(/STARTOS_TOKEN=(\S+)/)?.[1]
-
-    if (result.exitCode !== 0 || !token) {
-      const err = stdout.match(/STARTOS_ERROR=(.*)/)?.[1]
+    if (!res.ok) {
       throw new Error(
-        err
-          ? i18n('GitLab refused to create the runner: ') + err
-          : i18n('Could not create the runner. Check the service logs.'),
+        i18n('GitLab refused to create the runner: ') + res.message,
       )
     }
+
+    const token = res.value.token
 
     return {
       version: '1',
@@ -117,16 +103,3 @@ export const createRunnerToken = sdk.Action.withInput(
   },
 )
 
-/** Render a JS value as a Ruby literal. Only the shapes used above. */
-function rubyLiteral(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(rubyLiteral).join(', ')}]`
-  if (value !== null && typeof value === 'object') {
-    const pairs = Object.entries(value).map(
-      ([k, v]) => `${k}: ${rubyLiteral(v)}`,
-    )
-    return `{ ${pairs.join(', ')} }`
-  }
-  // JSON string/number/boolean literals are valid Ruby literals, and
-  // JSON.stringify escapes quotes and backslashes for us.
-  return JSON.stringify(value)
-}

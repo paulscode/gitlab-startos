@@ -49,7 +49,7 @@ The package runs a single subcontainer, **`gitlab-sub`**, which hosts every GitL
 start-cli package attach gitlab
 ```
 
-Actions that need `gitlab-rails` or `gitlab-rake` run in short-lived temporary subcontainers mounting the same volumes, rather than in `gitlab-sub`.
+Actions do **not** run in a second container. They call GitLab's REST API over the internal bridge instead — see [File Models](#file-models) for why a short-lived container cannot run `gitlab-rails` here.
 
 ## Volume and Data Layout
 
@@ -69,7 +69,9 @@ StartOS-side state is kept in `store.json` at the root of the `main` volume — 
 
 The package owns exactly one file model, and deliberately does **not** model GitLab's own configuration.
 
-**`store.json`** (`main` volume root) holds StartOS-side state only: the chosen primary URL, the generated initial root password and whether it has been acknowledged, and the SMTP selection. It is created at install with a generated password and an empty URL, then written only by actions and by the init-time primary-URL logic. Nothing in the container can read or write it.
+**`store.json`** (`main` volume root) holds StartOS-side state only: the chosen primary URL, the generated initial root password and whether it has been acknowledged, the SMTP selection, and an admin API token the package mints for its own use. It is created at install with a generated password and an empty URL, then written only by actions and by the service's own startup logic. Nothing in the container can read or write it.
+
+The internal API token exists because actions cannot run `gitlab-rails` themselves: `gitlab-ctl reconfigure` writes `database.yml`, `gitlab.yml` and `secrets.yml` into the container's image layer rather than onto a volume, so a short-lived container started from the image has no working Rails at all. The service mints the token during startup, where Rails does work, and actions call GitLab's REST API over the internal bridge instead. The token is re-issued on every start, which bounds how long a leaked copy stays valid.
 
 **`/etc/gitlab/gitlab.rb` is not modelled, and hand edits to it do not survive.** Omnibus evaluates `GITLAB_OMNIBUS_CONFIG` *before* reading `gitlab.rb`, and this package rebuilds that variable from scratch on every start. Any key the package sets — the external URL, the nginx and proxy-header settings, the Puma and Sidekiq sizing, the SSH port, the disabled components, the SMTP block — is re-asserted on every start and will silently override an edit to `gitlab.rb`. Keys the package does *not* set are left entirely to the user and persist normally, so `gitlab.rb` remains the right place for settings this package has no opinion about.
 
@@ -98,7 +100,7 @@ The SSH interface requests external port 22 but does not always get it — Start
 
 Installation differs from upstream in three ways worth knowing.
 
-**No setup wizard.** Upstream GitLab has no interactive installer either, but it does require you to set a root password out of band. This package generates a strong one at install, passes it to the first reconfigure, and surfaces it through the Initial Credentials action. Sign in as `root`.
+**No setup wizard, and the administrator is created explicitly.** This package generates a strong root password at install and surfaces it through the Initial Credentials action; sign in as `root`. It also creates the account itself rather than relying on GitLab's own seeding, which does not run on the code path this container takes — GitLab logs "Default admin account has been configured" either way, so that message is not evidence the account exists.
 
 **The primary URL is chosen for you, once.** At install the package seeds the LAN (`.local`) address as GitLab's canonical URL so a fresh instance works immediately. Change it with the Set Primary URL action if you want Tor or a clearnet domain to be canonical instead.
 
@@ -112,11 +114,11 @@ Five actions, all user-facing; none are hidden.
 
 **Set Primary URL** — Run when you want a different address to be canonical: exposing GitLab over Tor or a domain, or after disabling the gateway the current URL depends on. Writes `store.json` only. Instant, but **requires a restart to take effect**, and that restart re-runs reconfigure (a couple of minutes). Safe to repeat. Existing local clones keep working; their remotes point at the old address until updated by hand.
 
-**Reset Root Password** — Run when the root password is lost or must be rotated. Executes against the live database and changes the `root` user's password immediately; also clears the stored initial password. Takes 30–60 seconds (Rails boot dominates), does not interrupt service. Safe to repeat, but each run invalidates the previous password. **Returns the new password, which is shown once and not stored** — capture it before dismissing.
+**Reset Root Password** — Run when the root password is lost or must be rotated. Changes the `root` user's password immediately via GitLab's API and clears the stored initial password. Near-instant, does not interrupt service. Safe to repeat, but each run invalidates the previous password. **Returns the new password, which is shown once and not stored** — capture it before dismissing.
 
 **Configure Email** — Run to enable outgoing mail for password resets, confirmations and notifications, using either the StartOS system SMTP relay or your own server. Writes `store.json` only; **requires a restart** to apply. Safe to repeat.
 
-**Create Runner Token** — Run to attach a CI/CD runner. Creates an instance-level runner in GitLab's database and returns its authentication token. Takes 30–60 seconds, does not interrupt service. Each run creates a **new, additional** runner registration rather than replacing one, so repeated runs leave stale runner entries in the admin area to clean up. **The token is shown once**; GitLab keeps no retrievable copy. The GitLab Runner package calls this action automatically, so you only need it by hand for a runner running elsewhere.
+**Create Runner Token** — Run to attach a CI/CD runner. Creates an instance-level runner via GitLab's API and returns its authentication token. Near-instant, does not interrupt service. Each run creates a **new, additional** runner registration rather than replacing one, so repeated runs leave stale runner entries in the admin area to clean up. **The token is shown once**; GitLab keeps no retrievable copy. The GitLab Runner package calls this action automatically, so you only need it by hand for a runner running elsewhere.
 
 ## Tasks
 

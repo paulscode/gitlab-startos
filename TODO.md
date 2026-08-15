@@ -13,23 +13,32 @@
   HTTPS; git-over-HTTPS and git-over-SSH endpoints live; monitoring endpoints
   confirmed *not* externally reachable
 
+## Verified on hardware
+
+- Git push **and** clone over HTTPS, and push over SSH, against a real project.
+  Clone URLs carry the dynamically assigned HTTP and SSH ports correctly.
+- Web login end to end (CSRF, session, proxy headers).
+- Monitoring endpoints confirmed **not** reachable from outside the container.
+- **Upgrade rehearsal**: 19.1.4 installed, seeded with a project and commit,
+  then updated in place to 19.2.2. Migrations ran, all services came back, and
+  the repository, user and admin account survived.
+- Reset Root Password: new password authenticates, stale one retired, and the
+  Initial Credentials action correctly reports itself superseded afterwards.
+- Create Runner Token: the exact API path the action uses returns a `glrt-`
+  token over the internal bridge.
+
 ## Remaining before release
 
-- [ ] **Backup / restore round trip.** Take a backup, wipe, restore, confirm the
-      instance comes back with its repositories, users and secrets intact. This
-      is the one advertised guarantee not yet exercised.
-- [ ] **Push a real repository** over HTTPS and over SSH — create a project, add
-      an SSH key, clone, commit, push. Endpoints answer correctly but no actual
-      Git traffic has been pushed through them.
-- [ ] **Exercise Set Primary URL end to end**: switch to the Tor address,
-      restart, confirm generated links and clone URLs follow.
+- [ ] **Backup / restore round trip.** Blocked: `backup create` authenticates
+      against the StartOS master password, which the packager must supply. A
+      CIFS target is already registered on the box (`cifs-0`) for this. Run:
+      `start-cli backup create cifs-0 <server-password> --package-ids gitlab`
+      then uninstall, reinstall and restore, and confirm repositories, users
+      and secrets all come back.
+- [ ] **Exercise Set Primary URL end to end**: needs a second address (Tor or a
+      domain) enabled on the box; only the LAN address exists today.
 - [ ] **Configure Email**: verify against a real SMTP server; confirm a password
       reset email actually arrives.
-- [ ] **Reset Root Password**: run it and confirm the new password works and the
-      old one does not.
-- [ ] **Upgrade rehearsal.** Install this version, then update to the next patch
-      release and confirm migrations complete. This is the highest-value
-      remaining test — see UPDATING.md.
 - [ ] **Reconfigure smoke test in CI.** Automate the check in UPDATING.md so a
       removed Omnibus key fails the build rather than the user's install.
 - [ ] Replace `icon.svg` if a better-quality official mark is available.

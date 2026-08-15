@@ -1,6 +1,10 @@
 import { T } from '@start9labs/start-sdk'
 import { showInitialCredentials } from './actions/showInitialCredentials'
 import { ensureRootUser } from './ensureRootUser'
+import {
+  generateInternalToken,
+  mintInternalTokenScript,
+} from './gitlabApi'
 import { storeJson } from './fileModels/store.json'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
@@ -220,8 +224,13 @@ export const main = sdk.setupMain(async ({ effects }) => {
           // to sign in. Omnibus only creates it when it takes the seeding path,
           // which is not the path it takes here — see ensureRootUser.ts. Runs
           // after `primary` so the database is up.
+          // Rails takes 40-60s just to boot, well past exec's 30s default,
+          // which would SIGKILL these before they did anything.
+          const railsExec = (command: string[]) =>
+            subcontainer.exec(command, undefined, 300_000)
+
           const outcome = await ensureRootUser(
-            (command) => subcontainer.exec(command),
+            railsExec,
             store.initialRootPassword,
           )
 
@@ -230,6 +239,32 @@ export const main = sdk.setupMain(async ({ effects }) => {
               'Could not verify the administrator account. Use the Reset Root Password action if you cannot sign in.',
             )
             return null
+          }
+
+          // Re-issue the package's own admin API token. Actions use it instead
+          // of booting Rails themselves, which they cannot do — reconfigure
+          // writes Rails' config into the image layer, so a throwaway
+          // subcontainer has no database.yml, gitlab.yml or secrets.yml.
+          // Re-minting each start also bounds the lifetime of a leaked token.
+          const internalToken = generateInternalToken()
+          const minted = await railsExec([
+            'gitlab-rails',
+            'runner',
+            mintInternalTokenScript(internalToken),
+          ])
+          if (
+            minted.exitCode === 0 &&
+            String(minted.stdout).includes('STARTOS_TOKEN_OK')
+          ) {
+            await storeJson.merge(
+              effects,
+              { internalToken },
+              { allowWriteAfterConst: true },
+            )
+          } else {
+            console.error(
+              'Could not mint the internal API token; actions that manage users or runners will be unavailable until the next restart.',
+            )
           }
 
           // Raise the "here is your password" task once, and only once GitLab

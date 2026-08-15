@@ -29,6 +29,14 @@ const shape = z
      */
     rootPasswordAcknowledged: z.boolean().catch(false),
 
+    /**
+     * Admin API token the package mints for its own use, re-issued on every
+     * start. Actions use it instead of booting Rails in a throwaway container,
+     * which cannot work: reconfigure writes Rails' config into the image layer,
+     * not onto a volume.
+     */
+    internalToken: z.string().catch(''),
+
     /** SMTP selection, in the shape the SDK's smtp input spec produces. */
     smtp: z
       .object({

@@ -1,7 +1,8 @@
 import { storeJson } from '../fileModels/store.json'
+import { gitlabApi } from '../gitlabApi'
 import { i18n } from '../i18n'
 import { sdk } from '../sdk'
-import { generateRootPassword, mount } from '../utils'
+import { generateRootPassword } from '../utils'
 
 export const resetRootPassword = sdk.Action.withoutInput(
   'reset-root-password',
@@ -14,8 +15,7 @@ export const resetRootPassword = sdk.Action.withoutInput(
     warning: i18n(
       'This replaces the current root password immediately. Anyone relying on the old one will be locked out.',
     ),
-    // The reset drives gitlab-rails, which needs the database up — so GitLab
-    // must be running for this to work.
+    // Goes through GitLab's API, so the service has to be up.
     allowedStatuses: 'only-running',
     group: null,
     visibility: 'enabled',
@@ -24,27 +24,13 @@ export const resetRootPassword = sdk.Action.withoutInput(
   async ({ effects }) => {
     const password = generateRootPassword()
 
-    // Run against the live service: gitlab-rails talks to the Postgres cluster
-    // that the running instance owns, over its socket on the shared volume.
-    const result = await sdk.SubContainer.withTemp(
-      effects,
-      { imageId: 'gitlab' },
-      mount,
-      'gitlab-reset-password',
-      async (sub) =>
-        sub.exec([
-          'gitlab-rails',
-          'runner',
-          // find_by! raises if root was renamed or deleted, which surfaces as a
-          // non-zero exit and a visible error rather than silent success.
-          `u = User.find_by!(username: 'root'); u.password = u.password_confirmation = ${JSON.stringify(password)}; u.password_automatically_set = false; u.save!`,
-        ]),
-    )
+    // The administrator is always id 1: it is the first user the instance
+    // creates, and the package creates it itself when GitLab's own seeding
+    // does not run.
+    const res = await gitlabApi(effects, 'PUT', '/users/1', { password })
 
-    if (result.exitCode !== 0) {
-      throw new Error(
-        i18n('Could not reset the password. Check the service logs.'),
-      )
+    if (!res.ok) {
+      throw new Error(i18n('Could not reset the password: ') + res.message)
     }
 
     // The generated install password is no longer the truth; drop it so the
