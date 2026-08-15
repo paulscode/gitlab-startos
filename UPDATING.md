@@ -68,3 +68,31 @@ its own release.
 **Rehearse the upgrade.** Install the current release, then update to the
 candidate on a real StartOS box. Database migrations run on first boot after an
 upgrade and can take considerably longer than a normal start.
+
+## The upgrade floor — check this on every bump
+
+GitLab refuses to upgrade across too wide a version gap. Each release hard-codes
+a single floor, and the container entrypoint enforces it *before* doing anything
+else; failing it means the service never starts.
+
+Read the candidate image's floor:
+
+```sh
+docker run --rm --entrypoint sh gitlab/gitlab-ce:<NEW_TAG> -c \
+  "grep -oE \"'[0-9]+\.[0-9]+'\" \
+   /opt/gitlab/embedded/service/omnibus-ctl/lib/gitlab_ctl/upgrade_check.rb | head -1"
+```
+
+Then:
+
+1. **Update `MIN_UPGRADE_FROM` in `startos/upgradeGate.ts`** to match. The
+   package uses it to fail with a readable message instead of a dead container.
+
+2. **If the floor rose above the previous release's upstream version, this
+   release is a required stop.** StartOS offers every user a single hop from
+   whatever they have to the newest version, so someone who skipped several
+   releases would otherwise be handed an update that cannot start. Say so
+   plainly at the top of the release notes — name the version they must install
+   first — and keep that intermediate version published so they can.
+
+3. If the floor did not move, no special handling is needed.

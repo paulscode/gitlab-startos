@@ -7,3 +7,9 @@ node_modules/
 docker-images
 javascript
 ncc-cache
+
+# Release signing: SHA256SUMS is generated into builds/ (already ignored) and
+# signed off-box. Detached signatures never belong in the repo either.
+*.asc
+*.sig
+*.gpg

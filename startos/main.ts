@@ -8,6 +8,7 @@ import {
 import { storeJson } from './fileModels/store.json'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
+import { checkUpgradeGate } from './upgradeGate'
 import { httpInterfaceId, mainHostId, mount, sshInterfaceId } from './utils'
 
 /**
@@ -104,6 +105,19 @@ export const main = sdk.setupMain(async ({ effects }) => {
 
   const store = await storeJson.read().const(effects)
   if (!store) throw new Error(i18n('Store not found'))
+
+  // GitLab will not upgrade across too wide a version gap, and enforces that in
+  // its entrypoint by exiting before it does anything. Catch it here instead so
+  // the user gets a sentence naming the version to install first, rather than a
+  // container that dies with the reason buried in its logs.
+  const gate = await checkUpgradeGate()
+  if (gate.kind === 'too-old') {
+    throw new Error(
+      i18n(
+        'This version of GitLab cannot upgrade directly from the version installed. Install an intermediate release first.',
+      ) + ` (installed ${gate.installed}, requires ${gate.floor} or newer)`,
+    )
+  }
 
   // Both values come off the one host record, and only these two are returned,
   // so main re-runs when the web address or the assigned SSH port changes and
