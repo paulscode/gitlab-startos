@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="GitLab">
+  <title>GitLab</title>
+  <path fill="#e24329" d="M256 486 350 196H162z"/>
+  <path fill="#fc6d26" d="M256 486 162 196H30z"/>
+  <path fill="#fca326" d="M30 196 2 283a19 19 0 0 0 7 21l247 182z"/>
+  <path fill="#e24329" d="M30 196h132L105 21c-6-18-31-18-37 0z"/>
+  <path fill="#fc6d26" d="M256 486 350 196h132z"/>
+  <path fill="#fca326" d="M482 196l28 87a19 19 0 0 1-7 21L256 486z"/>
+  <path fill="#e24329" d="M482 196H350l57-175c6-18 31-18 37 0z"/>
+</svg>
