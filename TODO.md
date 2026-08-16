@@ -26,12 +26,13 @@
   Initial Credentials action correctly reports itself superseded afterwards.
 - Create Runner Token: the exact API path the action uses returns a `glrt-`
   token over the internal bridge.
-
-## Queued for the next release
-
-- Marketplace short description reworded — "issue tracking" rather than
-  "issues", which read as a defect report when the listing wrapped the line.
-  Already in the repo; ships with whatever version goes out next.
+- **Create Runner Token (automatic) is reachable from another service.** The
+  GitLab Runner package invoked it across the service boundary and got back a
+  working token, which GitLab's `runners/verify` endpoint accepted. This is the
+  only shape of cross-service call that works: an action taking input cannot be
+  reached this way at all.
+- **In-place update 19.2.2:0 → 19.2.2:1.** The range vertex resolved,
+  `canMigrateFrom` widened, and pre-update data (the minted runner) survived.
 
 ## Remaining before release
 
