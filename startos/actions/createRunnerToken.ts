@@ -53,6 +53,12 @@ export const createRunnerToken = sdk.Action.withInput(
     allowedStatuses: 'only-running',
     group: null,
     visibility: 'enabled',
+    // Actions default to user-only: another service calling this would be
+    // rejected with "cannot be invoked directly by other services". The GitLab
+    // Runner package declares GitLab as a dependency precisely so it can mint
+    // itself a token without making the user copy one between two pages of the
+    // same server, so it needs to be reachable by dependents.
+    access: 'dependent',
   }),
 
   inputSpec,

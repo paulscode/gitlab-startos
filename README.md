@@ -118,7 +118,7 @@ Five actions, all user-facing; none are hidden.
 
 **Configure Email** — Run to enable outgoing mail for password resets, confirmations and notifications, using either the StartOS system SMTP relay or your own server. Writes `store.json` only; **requires a restart** to apply. Safe to repeat.
 
-**Create Runner Token** — Run to attach a CI/CD runner. Creates an instance-level runner via GitLab's API and returns its authentication token. Near-instant, does not interrupt service. Each run creates a **new, additional** runner registration rather than replacing one, so repeated runs leave stale runner entries in the admin area to clean up. **The token is shown once**; GitLab keeps no retrievable copy. The GitLab Runner package calls this action automatically, so you only need it by hand for a runner running elsewhere.
+**Create Runner Token** — Run to attach a CI/CD runner. Declared with `access: 'dependent'`, so the GitLab Runner package can invoke it directly; actions default to user-only and would otherwise reject the call. Creates an instance-level runner via GitLab's API and returns its authentication token. Near-instant, does not interrupt service. Each run creates a **new, additional** runner registration rather than replacing one, so repeated runs leave stale runner entries in the admin area to clean up. **The token is shown once**; GitLab keeps no retrievable copy. The GitLab Runner package calls this action automatically, so you only need it by hand for a runner running elsewhere.
 
 ## Tasks
 
