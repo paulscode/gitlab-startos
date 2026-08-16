@@ -1,6 +1,6 @@
 import { i18n } from '../i18n'
 import { sdk } from '../sdk'
-import { gitlabApi } from '../gitlabApi'
+import { mintRunner } from './mintRunner'
 
 const { InputSpec, Value } = sdk
 
@@ -53,12 +53,9 @@ export const createRunnerToken = sdk.Action.withInput(
     allowedStatuses: 'only-running',
     group: null,
     visibility: 'enabled',
-    // Actions default to user-only: another service calling this would be
-    // rejected with "cannot be invoked directly by other services". The GitLab
-    // Runner package declares GitLab as a dependency precisely so it can mint
-    // itself a token without making the user copy one between two pages of the
-    // same server, so it needs to be reachable by dependents.
-    access: 'dependent',
+    // Access stays user-only. A dependent cannot call this anyway -- actions
+    // taking input cannot be invoked across services -- so create-runner-token-auto
+    // is what the Runner package uses.
   }),
 
   inputSpec,
@@ -71,26 +68,11 @@ export const createRunnerToken = sdk.Action.withInput(
       .map((t) => t.trim())
       .filter(Boolean)
 
-    const res = await gitlabApi<{ id: number; token: string }>(
-      effects,
-      'POST',
-      '/user/runners',
-      {
-        runner_type: 'instance_type',
-        description: input.description,
-        // GitLab's form encoding takes repeated/array params as a CSV string.
-        tag_list: tagList.join(','),
-        run_untagged: input.runUntagged,
-      },
-    )
-
-    if (!res.ok) {
-      throw new Error(
-        i18n('GitLab refused to create the runner: ') + res.message,
-      )
-    }
-
-    const token = res.value.token
+    const token = await mintRunner(effects, {
+      description: input.description,
+      tags: tagList,
+      runUntagged: input.runUntagged,
+    })
 
     return {
       version: '1',
