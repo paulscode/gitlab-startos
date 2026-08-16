@@ -19,6 +19,9 @@ SUFFIX    ?= -040
 #   make release RELEASE_ARCHES="x86_64 aarch64"
 RELEASE_ARCHES ?= x86_64
 
+# Git tag for this version: "19.2.2:0" -> "v19.2.2_0" (StartOS convention).
+TAG := v$(shell awk -F"'" '/version:/ {print $$2; exit}' startos/versions/current.ts | tr ':' '_')
+
 .PHONY: release
 release:
 	@rm -rf $(BUILD_DIR)          # a stale artifact would slip into SHA256SUMS
@@ -29,3 +32,14 @@ release:
 	done
 	@cd $(BUILD_DIR) && sha256sum *.s9pk > SHA256SUMS
 	@echo "→ $(BUILD_DIR)/"
+
+# Publish the built release to GitHub so specific versions can be sideloaded.
+# Sign builds/<version>/SHA256SUMS on the air-gapped machine first and put the
+# detached signature beside it; this only uploads what is already there.
+.PHONY: publish-github
+publish-github:
+	@./scripts/publish-github.sh "$(BUILD_DIR)" "$(TAG)"
+
+.PHONY: print-tag
+print-tag:
+	@echo '$(TAG)'

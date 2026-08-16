@@ -7,6 +7,12 @@ on:
 
 jobs:
   release:
+    # Publishing runs only in the Start9-Community fork, which is where the
+    # community pipeline lives and where the signing secrets exist. In the
+    # maintainer's own repo this is inert: releases there are built locally and
+    # published by hand, so that the StartOS developer key never has to be
+    # copied into GitHub. See RELEASING.md.
+    if: github.repository_owner == 'Start9-Community'
     uses: Start9Labs/start-technologies/.github/workflows/release.yml@master
     with:
       RELEASE_REGISTRY: ${{ vars.RELEASE_REGISTRY }}
