@@ -41,6 +41,15 @@ npm run check:config  # boots the real image, proves the config reconfigures
 make release          # -> builds/<version>/*.s9pk + SHA256SUMS
 ```
 
+Builds both architectures by default. One `SHA256SUMS` covers every artifact, so
+a single signature covers the whole release.
+
+> **Builds are not byte-reproducible.** Two builds of the same commit produce
+> different checksums (timestamps in the squashfs). So the signature must be
+> over the artifacts you actually publish, nobody can verify by rebuilding, and
+> the build directory must not be touched after signing. `make release` refuses
+> to overwrite a signed directory for that reason.
+
 **3. Sign, off-box.** Carry `builds/<version>/SHA256SUMS` to the air-gapped
 machine, sign it, and bring the detached signature back beside it:
 

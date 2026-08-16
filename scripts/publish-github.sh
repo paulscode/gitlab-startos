@@ -77,11 +77,18 @@ if gh release view "$TAG" >/dev/null 2>&1; then
 else
   gh release create "$TAG" "${ASSETS[@]}" \
     --title "$TAG" \
-    --notes "Sideload the .s9pk for this version. Verify with:
+    --notes "Sideload the .s9pk matching your device's architecture. Verify with:
 
     sha256sum -c SHA256SUMS
 
-Older releases are kept available because GitLab limits how far an instance can
+\`SHA256SUMS\` covers every artifact in this release and is signed separately.
+
+**aarch64 is untested.** It is built from upstream's official ARM image but has
+not been run on ARM hardware, and GitLab documents outstanding issues on that
+architecture. Take a backup before depending on it, and please report results.
+The x86_64 build is tested.
+
+Older releases stay available because GitLab limits how far an instance can
 upgrade in one step; a long-dormant install may need one of them first."
 fi
 

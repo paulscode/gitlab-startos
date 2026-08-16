@@ -15,9 +15,9 @@ BUILD_DIR := builds/$(VERSION)
 # from 0.3.5 ones.
 SUFFIX    ?= -040
 
-# Ship only what has been validated on real hardware. To promote aarch64:
-#   make release RELEASE_ARCHES="x86_64 aarch64"
-RELEASE_ARCHES ?= x86_64
+# Architectures published in a release. aarch64 ships marked untested -- see
+# the Limitations section of README.md.
+RELEASE_ARCHES ?= x86_64 aarch64
 
 # Git tag for this version: "19.2.2:0" -> "v19.2.2_0" (StartOS convention).
 TAG := v$(shell awk -F"'" '/version:/ {print $$2; exit}' startos/versions/current.ts | tr ':' '_')
