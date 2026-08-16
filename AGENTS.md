@@ -18,8 +18,9 @@ Two constraints that are easy to violate and expensive to discover:
 
 - **Never set an Omnibus key that upstream has removed.** Reconfigure aborts and
   the service never starts. Prefer current spellings over deprecated ones —
-  `gitlab_rails['nginx'][...]`, not bare `nginx[...]`. `UPDATING.md` has the
-  pre-release check that catches this.
+  `gitlab_rails['nginx'][...]`, not bare `nginx[...]`. `npm run check:config`
+  boots a real image against the generated config and fails on removed *or*
+  deprecated keys — run it after any change to `startos/omnibusConfig.ts`.
 - **Health checks must run inside the container.** GitLab restricts `/-/health`
   and `/-/readiness` to `127.0.0.0/8`, so probing over the bridge returns 404.
   Widening the allowlist would expose them to the LAN, because proxied traffic

@@ -31,8 +31,20 @@ removed key is a hard abort — `gitlab-ctl reconfigure` refuses to run and the
 service never starts. Two keys have already been lost this way (`grafana` and
 `mattermost`), and several the package relies on are deprecated.
 
-Boot the candidate image with the config this package generates and confirm both
-that it succeeds and that it prints no new deprecations:
+This is automated. After changing the image tag, run:
+
+```sh
+npm run check:config
+```
+
+It boots the candidate image with the configuration `startos/omnibusConfig.ts`
+actually generates — not a copy — and fails on a removed key, an unrecognised
+key, a container that dies before reconfigure finishes, or any deprecation
+warning. Deprecated keys are treated as failures because that is the state a key
+occupies immediately before it is removed. Takes a few minutes; the same job
+runs on pull requests.
+
+The manual equivalent, if you want to poke at a running instance:
 
 ```sh
 docker run --rm --name gitlab-cfgcheck --shm-size 256m \
