@@ -51,6 +51,10 @@ gpg --armor --detach-sign SHA256SUMS     # -> SHA256SUMS.asc
 Signatures are gitignored (`*.asc`, `*.sig`, `*.gpg`) — they live only in
 `builds/`, which is gitignored too, and in the published release.
 
+`make release` refuses to overwrite a build directory that already holds a
+signature, since rebuilding changes the checksum and silently invalidates it.
+Pass `FORCE=1` when you intend to rebuild and re-sign.
+
 **4. Tag and publish to GitHub.**
 
 ```sh

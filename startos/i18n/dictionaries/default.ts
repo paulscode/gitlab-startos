@@ -41,7 +41,7 @@ const dict = {
   'Store not found': 37,
   'Tags': 38,
   'The GitLab web interface. Also serves the API and git clone/push over HTTPS.': 39,
-  'The address GitLab treats as canonical is no longer available. Choose another.': 40,
+  'The address GitLab treated as canonical is no longer available. It is now using a different one — confirm or change it.': 40,
   'This replaces the current root password immediately. Anyone relying on the old one will be locked out.': 41,
   'Upgrade Blocked': 42,
   'Web Interface': 43,

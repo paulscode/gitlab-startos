@@ -24,6 +24,16 @@ TAG := v$(shell awk -F"'" '/version:/ {print $$2; exit}' startos/versions/curren
 
 .PHONY: release
 release:
+	@# Refuse to destroy a signed build. SHA256SUMS is signed off-box, so the
+	@# signature is expensive to replace and trivially lost to a stray rebuild.
+	@for sig in $(BUILD_DIR)/SHA256SUMS.asc $(BUILD_DIR)/SHA256SUMS.sig $(BUILD_DIR)/SHA256SUMS.gpg; do \
+	  if [ -e "$$sig" ] && [ -z "$(FORCE)" ]; then \
+	    echo "$$sig exists — $(BUILD_DIR) holds a signed build."; \
+	    echo "Rebuilding changes the checksum and invalidates that signature."; \
+	    echo "Re-run with FORCE=1 if you intend to rebuild and re-sign."; \
+	    exit 1; \
+	  fi; \
+	done
 	@rm -rf $(BUILD_DIR)          # a stale artifact would slip into SHA256SUMS
 	@mkdir -p $(BUILD_DIR)
 	@for a in $(RELEASE_ARCHES); do \
