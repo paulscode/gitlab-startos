@@ -113,13 +113,29 @@ export const main = sdk.setupMain(async ({ effects }) => {
   const gate = await checkUpgradeGate()
   if (gate.kind === 'too-old') {
     const message = upgradeBlockedMessage(gate)
-    // Log before throwing. A thrown error out of `main` stops the service from
-    // starting but is not surfaced anywhere the user looks — it does not reach
-    // the log stream and leaves statusInfo.error null, so all they would see is
-    // a service stuck "starting" with no explanation. The service log is where
-    // the troubleshooting docs point, so put it there explicitly.
     console.error(message)
-    throw new Error(message)
+
+    // Report the condition as a failing health check rather than throwing.
+    //
+    // Throwing does stop GitLab from launching, which is the important part —
+    // but it surfaces nowhere the user looks: it never reaches the log stream,
+    // leaves `statusInfo.error` null, and the dashboard shows the service as
+    // "Starting" forever. Someone waiting on that has no reason to suspect it
+    // will never finish, let alone to go reading logs.
+    //
+    // A standalone health check has no process behind it, so GitLab still never
+    // starts and there is no crash loop — but the dashboard shows a failed
+    // check carrying the explanation and the version to install next.
+    return sdk.Daemons.of(effects).addHealthCheck('upgrade-blocked', {
+      ready: {
+        display: i18n('Upgrade Blocked'),
+        // The condition cannot change while the service runs: it is decided by
+        // what is on disk. Poll slowly; the first result is the lasting one.
+        trigger: sdk.trigger.cooldownTrigger(60_000),
+        fn: async () => ({ result: 'failure' as const, message }),
+      },
+      requires: [],
+    })
   }
 
   // Both values come off the one host record, and only these two are returned,
