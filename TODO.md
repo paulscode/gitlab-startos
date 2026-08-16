@@ -27,6 +27,12 @@
 - Create Runner Token: the exact API path the action uses returns a `glrt-`
   token over the internal bridge.
 
+## Queued for the next release
+
+- Marketplace short description reworded — "issue tracking" rather than
+  "issues", which read as a defect report when the listing wrapped the line.
+  Already in the repo; ships with whatever version goes out next.
+
 ## Remaining before release
 
 - [ ] **Backup / restore round trip.** Blocked: `backup create` authenticates

@@ -3,7 +3,11 @@
 // contributors provide them, rather than machine-translating technical terms.
 // Length limits: short <= 80 chars, long <= 500.
 export const short = {
-  en_US: 'Self-hosted Git forge with issues, merge requests and CI/CD',
+  // "issue tracking" rather than "issues": the marketplace wraps this line, and
+  // "Self-hosted Git forge with issues," on a line of its own reads as a defect
+  // report rather than a feature list. This phrasing survives any wrap point.
+  en_US:
+    'Self-hosted Git forge with merge requests, issue tracking and CI/CD',
 }
 
 export const long = {
